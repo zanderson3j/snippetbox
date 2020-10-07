@@ -1,27 +1,27 @@
 package main
 
 import (
-	"database/sql" // New import
+	"database/sql"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/zanderson3j/snippetbox/pkg/models/mysql"
 
-	_ "github.com/go-sql-driver/mysql" // New import
+	_ "github.com/go-sql-driver/mysql"
 )
 
-// Add a snippets field to the application struct. This will allow us to
-// make the SnippetModel object available to our handlers.
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	snippets *mysql.SnippetModel
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	snippets      *mysql.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
-	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
+	dsn := flag.String("dsn", "svcsnippetbox:Ohiobadger3@/snippetbox?parseTime=true", "MySQL data source name")
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	flag.Parse()
 
@@ -34,12 +34,16 @@ func main() {
 	}
 	defer db.Close()
 
-	// Initialize a mysql.SnippetModel instance and add it to the application
-	// dependencies.
+	templateCache, err := newTemplateCache("./ui/html/")
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+
 	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		snippets: &mysql.SnippetModel{DB: db},
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		snippets:      &mysql.SnippetModel{DB: db},
+		templateCache: templateCache,
 	}
 
 	srv := &http.Server{
@@ -53,8 +57,6 @@ func main() {
 	errorLog.Fatal(err)
 }
 
-// The openDB() function wraps sql.Open() and returns a sql.DB connection pool
-// for a given DSN.
 func openDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {

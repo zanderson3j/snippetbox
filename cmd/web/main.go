@@ -21,7 +21,7 @@ type application struct {
 }
 
 func main() {
-	dsn := flag.String("dsn", "svcsnippetbox:Ohiobadger3@/snippetbox?parseTime=true", "MySQL data source name")
+	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	flag.Parse()
 
